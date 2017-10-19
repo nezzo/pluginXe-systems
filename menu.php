@@ -28,8 +28,6 @@ add_action('admin_menu', function(){
 
 //функция по созданию формы и обработки ее "Оставить заявку"
 function set_orders_setting(){
-
-#TODO здесь ловить в самом начале $_POST если все данные есть то делаем редирект до вывода echo и тогда должен нормально заработать hedear (редирект на php)
  
  if(!empty($_POST['field1'])){
   $fio = $_POST['field1'];
@@ -73,18 +71,23 @@ function set_orders_setting(){
   
   //id  текущего пользователя
   $user_id = get_current_user_id();
-  
-  
+ 
+ 
   //если данные не пустые то отправляем запрос на добавление мета данных
   if(!empty($fio) && !empty($email) && !empty($phone) && !empty($broker) ){
-      add_user_meta( $user_id, '_order_fio', $fio);
-      add_user_meta( $user_id, '_order_email', $email);
-      add_user_meta( $user_id, '_order_phone', $phone);
-      add_user_meta( $user_id, '_order_broker', $broker);
-      add_user_meta( $user_id, '_order_pasport', $pasport);
-      add_user_meta( $user_id, '_order_card', $card);
-      add_user_meta( $user_id, '_order_dat', $dat);
-      
+  
+  $order_massiv = [
+    'fio'	=>	$fio,
+    'email'	=>	$email,
+    'phone'	=>	$phone,
+    'broker'	=>	$broker,
+    'pasport'	=>	$pasport,
+    'card'	=>	$card,
+    'dat'	=>	$dat,
+    'user_id'	=>	$user_id,
+  ];
+    //сериализуем данные, что бы потом распарсить и получить нужные данные без мучений
+      add_user_meta( $user_id, '_order_data', maybe_serialize($order_massiv));
       header("Location: ?page=get_orders");
  
   }
@@ -131,6 +134,94 @@ echo '<form action="?page=set_orders" method="post">
 
 }
 
+
+//Ваши заявки
+add_action('admin_menu', function(){
+	add_menu_page( 'Список заявок', 'Список заявок', 'administrator', 'get_orders_list_admin', 'get_orders_list_admin_setting', 'dashicons-clipboard'); 
+} );
+
+
+//выводим список всех заявок в админ панели для обработки закаказов
+function get_orders_list_admin_setting(){
+
+if(!empty($_GET["id"])){
+  var_dump($_GET["id"]);
+}else{
+ 
+ #TODO на будущее если удалять то по 	umeta_id   а создавать юзер мета то  по user_id что бы получать по ид клиента в лк
+ 
+ //массив данных который хранит данные о заявках
+ $orderInfo = get_user_order_info();
+ 
+ ?>
+  <table>
+    <thead>
+       <th>ФИО</th>
+       <th>email</th>
+       <th>Телефон</th>
+       <th>Брокер</th>
+       <th>Паспорт</th>
+       <th>Карта</th>
+       <th>Дата подачи заявки</th>
+      </thead>
+     <tbody>
+     <?php foreach($orderInfo as $order) {
+     
+     #TODO нужно будет разобраться откуда берется сука точка с запятой курва ебаная
+     
+     //десериализуем нужный нам массив
+      $client = maybe_unserialize(maybe_unserialize($order["meta_value"]));
+       
+       ?>
+       <tr>
+	  <td><a href='<?="?page=get_orders_list_admin&id=$client[user_id]"?>'><?=$client["fio"];?></a></td>
+          <td><?=$client["email"];?></td>
+          <td><?=$client["phone"];?></td>
+          <td><?=$client["broker"];?></td>
+          <td><?=$client["pasport"];?></td>
+          <td><?=$client["card"];?></td>
+          <td><?=$client["dat"];?></td>
+       </tr>
+      <?php } ?>  
+     </tbody>
+  </table>
+<?php
+
+ }
+ }
+ 
+ 
+ //получаем по id пользователя нужную инфу по ордеру так как get_user_meta не подходит из-за дублей
+ function get_user_order_info(){
+ global $wpdb;
+ 
+ $getInfo = $wpdb->get_results("SELECT umeta_id,meta_value  FROM $wpdb->usermeta
+	WHERE  meta_key = '_order_data' ORDER by meta_value DESC ");
+	
+ 	
+   
+  $infoList = array();
+  foreach ($getInfo as $order){
+    $infoList[] = [
+      "umeta_id" => $order->umeta_id,
+      "meta_value" => $order->meta_value,
+      
+    ];
+  
+  }
+  
+  return $infoList;
+ 
+ 
+ 
+ 
+ }
+
+
+
+
+
+
 //Ваши заявки
 add_action('admin_menu', function(){
 	add_menu_page( 'Ваши заявки', 'Ваши заявки', 'subscriber', 'get_orders', 'get_orders_list', 'dashicons-clipboard', 4 ); 
@@ -140,11 +231,13 @@ function get_orders_list(){
   //id  текущего пользователя
   $user_id = get_current_user_id();
   $single = false;
-  $getOrdersDat = get_user_meta( $user_id, '_order_dat', $single );
+  $getOrdersDat = get_user_meta( $user_id, '_order_data', $single );
+  $i = 1;
   
-   #TODO по дефолту здесь поля в обработке стоят. Админы сами меняют мета данные которые сюда будут подставляться заместь "в обработке".
-   #В админке сделать функцию в которой будет выводиться все данные, что указал  клиент в пункте "Оставить заявку". И нужные поля (мета данные)
-   #где админы будут прописывать для пользователя статусы, цены и все остальное
+  
+  
+   #TODO тут нужно будет решить вопрос насчет даты, так как заместь обработки должны идти другие мета данные там должна стоять и 
+   #дата подачи заявки (нужно другой массив десиреализовать) и подставить сюда данные, не этот что сейчас
   
   ?>
   <table>
@@ -157,10 +250,13 @@ function get_orders_list(){
        <th>Статус Оплаты</th>
       </thead>
      <tbody>
-     <?php for($i = 0; $i<count($getOrdersDat); $i++) { ?>
+     <?php foreach($getOrdersDat as $orders) { 
+     //десериализуем нужный нам массив
+      $order = maybe_unserialize($orders);
+      ?>
        <tr>
-	<td><?=$i+1;?></td>
-          <td><?=$getOrdersDat[$i];?></td>
+	<td><?=$i++;?></td>
+          <td><?=$order['dat'];?></td>
           <td>В обработке</td>
           <td>В обработке</td>
           <td>В обработке</td>
