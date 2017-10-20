@@ -1,4 +1,8 @@
 <?php
+#TODO надо создать разные файлы с подключением require ибо очень файл большой сложно искать. Подключение и работа с базой в один файл, выводи и формирование страницы в другой
+# тут только подключение и соеденение друг с другом сделать вообщем то один большой модуль + регу сюда прописать. Я боялся, что регу нельзя будет откл, но шорткод или код можно будет
+#убрать или в настройках вп запретить новую регу пользователям. ОПисание добавить до этого модуля (прописать все с реги сюда в описание)
+
 /*
   Plugin Name: Плагин "Личный кабинет"
   Version: 1.0
@@ -72,22 +76,27 @@ function set_orders_setting(){
   //id  текущего пользователя
   $user_id = get_current_user_id();
  
- 
   //если данные не пустые то отправляем запрос на добавление мета данных
   if(!empty($fio) && !empty($email) && !empty($phone) && !empty($broker) ){
   
   $order_massiv = [
-    'fio'	=>	$fio,
-    'email'	=>	$email,
-    'phone'	=>	$phone,
-    'broker'	=>	$broker,
-    'pasport'	=>	$pasport,
-    'card'	=>	$card,
-    'dat'	=>	$dat,
-    'user_id'	=>	$user_id,
+    'fio'		=>	$fio,
+    'email'		=>	$email,
+    'phone'		=>	$phone,
+    'broker'		=>	$broker,
+    'pasport'		=>	$pasport,
+    'card'		=>	$card,
+    'dat'		=>	$dat,
+    'user_id'		=>	$user_id,
+    'summa'		=>	"В обработке",
+    'status_order'	=>	"В обработке",
+    'srok'		=>	"В обработке",
+    'status_buy'	=>	"В обработке",
   ];
+ 
+  
     //сериализуем данные, что бы потом распарсить и получить нужные данные без мучений
-      add_user_meta( $user_id, '_order_data', maybe_serialize($order_massiv));
+      add_user_meta( $user_id, '_order_data', $order_massiv);
       header("Location: ?page=get_orders");
  
   }
@@ -144,8 +153,97 @@ add_action('admin_menu', function(){
 //выводим список всех заявок в админ панели для обработки закаказов
 function get_orders_list_admin_setting(){
 
-if(!empty($_GET["id"])){
-  var_dump($_GET["id"]);
+// принимаем данные с формы по редактированию ордера с админки (если в форме был передан ид пользователя)
+if(!empty($_POST['umeta_id'])){
+
+  if(!empty($_POST['field1'])){
+    $summa = $_POST['field1'];
+  }else{
+    $summa = "В обработке";
+  }
+  
+  if(!empty($_POST['field2'])){
+    $status_order = $_POST['field2'];
+  }else{
+    $status_order = "В обработке";
+  }
+  
+  if(!empty($_POST['field3'])){
+    $srok = $_POST['field3'];
+  }else{
+    $srok = "В обработке";
+  }
+  
+  if(!empty($_POST['field4'])){
+    $status_buy = $_POST['field4'];
+  }else{
+    $status_buy = "В обработке";
+  }
+ 
+  
+  //формируем массив данных с формы
+  $data = [
+  'summa'		=>	$summa,
+  'status_order'	=>	$status_order,
+  'srok'		=>	$srok,
+  'status_buy'		=>	$status_buy,
+  ];
+ 
+  //получаем нужные поля (ид пользоватеял и строку)
+  $getNeddInfo =  get_row_order_data((int)$_POST['umeta_id']);
+  
+   //получаем массив для внесения изменений 
+   $massivData = maybe_unserialize($getNeddInfo["meta_value"]);
+   
+   $order = array_replace($massivData,$data);
+ 
+  //заносим в базу обработанные данные
+  update_user_meta( $getNeddInfo["user_id"], '_order_data', $order, $massivData );
+ 
+}
+ 
+
+//по ид пользователя ловим методом гет для создания user_meta 
+if(!empty($_GET["umeta_id"])){
+    #TODO (редактированию что бы подтягивало данные нужно еще заюзать ид строки с базы) ордера клиента (обработка user_meta ордера НОВОГО)
+ 
+ 
+//отправляем данные методом POST на эту же страницу и обрабатываем для добавление в базу и редиректа
+echo '<form action="?page=get_orders_list_admin" method="post">
+      <ul class="form-style-1">
+ 	    <input type="text" style="display:none;" name="umeta_id"  value="'.$_GET["umeta_id"].'" class="field-divided" />
+  	  <li><label>Сумма к оплате</label>
+	    <input type="text" name="field1" class="field-divided" />
+	  </li>
+  
+	   <li>
+	      <label>Статус заявки</label>
+	      <select name="field2" class="field-select">
+	      <option>оплачено</option>
+	      <option>ожидает оплаты</option>
+	      </select>
+	  </li>
+	  <li><label>Сроки исполнения</label>
+	    <input type="text" name="field3" class="field-divided" />
+	  </li>
+ 
+	  <li>
+	      <label>Статус Оплаты</label>
+	      <select name="field4" class="field-select">
+	      <option>ожидает оплаты</option>
+	      <option>выполняется</option>
+ 
+	      </select>
+	  </li>
+ 
+	  <li>
+	      <input type="submit" value="Отправить" />
+	  </li>
+      </ul>
+      </form>
+';
+
+
 }else{
  
  #TODO на будущее если удалять то по 	umeta_id   а создавать юзер мета то  по user_id что бы получать по ид клиента в лк
@@ -165,16 +263,17 @@ if(!empty($_GET["id"])){
        <th>Дата подачи заявки</th>
       </thead>
      <tbody>
-     <?php foreach($orderInfo as $order) {
+     <?php 
+     $i = 1;
      
-     #TODO нужно будет разобраться откуда берется сука точка с запятой курва ебаная
+     foreach($orderInfo as $order) {
      
-     //десериализуем нужный нам массив
-      $client = maybe_unserialize(maybe_unserialize($order["meta_value"]));
+      //десериализуем нужный нам массив
+      $client = maybe_unserialize($order["meta_value"]);
        
        ?>
        <tr>
-	  <td><a href='<?="?page=get_orders_list_admin&id=$client[user_id]"?>'><?=$client["fio"];?></a></td>
+ 	  <td><a href='<?="?page=get_orders_list_admin&umeta_id=$order[umeta_id]"?>'><?=$client["fio"];?></a></td>
           <td><?=$client["email"];?></td>
           <td><?=$client["phone"];?></td>
           <td><?=$client["broker"];?></td>
@@ -211,17 +310,22 @@ if(!empty($_GET["id"])){
   }
   
   return $infoList;
+
+}
+
+
+//получаем одну строку user_meta по umeta_id
+function get_row_order_data($umeta_id){
+
+ global $wpdb;
+ 
+ $getInfo = $wpdb->get_row("SELECT user_id,meta_value  FROM $wpdb->usermeta
+	WHERE  umeta_id = '$umeta_id'", 'ARRAY_A');
+	
+ return $getInfo;
+}
  
  
- 
- 
- }
-
-
-
-
-
-
 //Ваши заявки
 add_action('admin_menu', function(){
 	add_menu_page( 'Ваши заявки', 'Ваши заявки', 'subscriber', 'get_orders', 'get_orders_list', 'dashicons-clipboard', 4 ); 
@@ -233,11 +337,7 @@ function get_orders_list(){
   $single = false;
   $getOrdersDat = get_user_meta( $user_id, '_order_data', $single );
   $i = 1;
-  
-  
-  
-   #TODO тут нужно будет решить вопрос насчет даты, так как заместь обработки должны идти другие мета данные там должна стоять и 
-   #дата подачи заявки (нужно другой массив десиреализовать) и подставить сюда данные, не этот что сейчас
+ 
   
   ?>
   <table>
@@ -257,17 +357,17 @@ function get_orders_list(){
        <tr>
 	<td><?=$i++;?></td>
           <td><?=$order['dat'];?></td>
-          <td>В обработке</td>
-          <td>В обработке</td>
-          <td>В обработке</td>
-          <td>В обработке</td>
+          <td><?=$order['summa'];?></td>
+          <td><?=$order['status_order'];?></td>
+          <td><?=$order['srok'];?></td>
+          <td><?=$order['status_buy'];?></td>
        </tr>
       <?php } ?>  
      </tbody>
   </table>
 <?php
 }
-
+ 
 
 //Мои Документы
 add_action( 'carbon_fields_register_fields', 'crb_attach_theme_options_my_document' );
