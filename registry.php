@@ -79,7 +79,7 @@ function custom_registration_function() {
     </div>
     
     <div>
-    <label for="phone">Телефон</label>
+    <label for="phone">Телефон <strong>*</strong></label>
     <input type="text" name="phone" value="' . ( isset( $_POST['phone']) ? $phone : null ) . '">
     </div>
     
@@ -106,8 +106,12 @@ function custom_registration_function() {
 function registration_validation( $username, $email, $phone, $skype, $password, $passwordSecond )  {
   global $reg_errors;
   $reg_errors = new WP_Error;
-  if ( empty( $username ) || empty( $password ) || empty( $email ) || empty( $passwordSecond ) ) {
+  if ( empty( $username ) || empty( $password ) || empty( $email ) || empty( $passwordSecond ) || empty( $phone ) ) {
       $reg_errors->add('field', 'Заполните обязательные поля');
+  }
+  
+  if ( 10 > strlen( $phone ) ) {
+    $reg_errors->add( 'phone_length', 'Телефон пользователя не должен быть меньше 10 символов' );
   }
   
   if ( 4 > strlen( $username ) ) {
@@ -166,6 +170,16 @@ function complete_registration() {
 	  //после добавление нового пользователя авторизуемся
 	  if(! is_wp_error( $user )){
 	  
+	  //после регистрации отправляем письмо пользователю
+	  $mess = "
+	    Данные по регестрации:
+	    Ваш ник: $username
+	    Ваш пароль: $password
+	  ";
+	  set_mail($email, 'Регистрация', $mess);
+	  
+	  
+	  
 	      //добавляем  отдельные данные в таблицу wp_usermeta (номер телефона и скайп)
 	      add_user_meta( $user, 'phone', $phone);
 	      add_user_meta( $user, 'skype', $skype);
@@ -201,6 +215,22 @@ add_shortcode( 'cr_custom_registration', 'custom_registration_shortcode' );
 function custom_registration_shortcode() {
     custom_registration_function();
     return ob_get_clean();
+}
+
+
+#TODO надо будет когда буду переделывать  плагин все соеденить в один с помощью require и созда 1 функцию которая будет принимать параметр на отправку писем (регистрация и заявки)
+//делаем отправку письма
+function set_mail($email, $title, $mess){
+
+
+//делаем проверку если все данные есть то отправляем
+if(!empty($email) && !empty($title) && !empty($mess)){
+  wp_mail($email, $title, $mess);
+}else{
+  return false;
+}
+
+
 }
 
 

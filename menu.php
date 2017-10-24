@@ -3,6 +3,9 @@
 # тут только подключение и соеденение друг с другом сделать вообщем то один большой модуль + регу сюда прописать. Я боялся, что регу нельзя будет откл, но шорткод или код можно будет
 #убрать или в настройках вп запретить новую регу пользователям. ОПисание добавить до этого модуля (прописать все с реги сюда в описание)
 
+
+#TODO надо заюзать функцию по отправке почты с реги по смене заявки только взять функцию по update если апдейтнулась заявка то отправляем письмо
+
 /*
   Plugin Name: Плагин "Личный кабинет"
   Version: 1.0
@@ -23,6 +26,40 @@ function crb_load() {
 add_filter( 'carbon_fields_theme_options_container_admin_only_access', '__return_false' );
 //END Install plugin carbon
 
+
+//подключаем скрипты плагина
+add_action( 'admin_enqueue_scripts', 'set_data_plugin_js' );
+function set_data_plugin_js() {
+	$tooltip = plugins_url('/css/tooltip.css', __FILE__);
+	$plugin = plugins_url('/js/plugin.js', __FILE__);
+	 
+	 //подключаем стили, скрипты плагина dataPicker  в админке
+    wp_enqueue_script( 'jquery-ui-datepicker' );
+    wp_enqueue_style( 'jquery-style', 'http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.2/themes/smoothness/jquery-ui.css' );
+	 
+	 //подключаем скрипт плагина
+	 wp_enqueue_script( 'plugin',$plugin, array('jquery') );
+	 
+	 wp_enqueue_script( 'plugin',$plugin, array('jquery') );
+	 
+	 
+ 	 
+}
+
+//подключаем стилей плагина
+add_action( 'admin_enqueue_scripts', 'set_data_plugin_css' );
+function set_data_plugin_css() {
+	$tooltip = plugins_url('/css/tooltip.css', __FILE__);
+ 
+	  wp_enqueue_style( 'tooltip', $tooltip);
+	 
+ 	 
+}
+
+
+
+
+
  
 //Оставить заявку
 add_action('admin_menu', function(){
@@ -40,15 +77,15 @@ function set_orders_setting(){
  }
  
  if(!empty($_POST['field2'])){
-  $email = $_POST['field2'];
+  $born = $_POST['field2'];
  }else{
-  $email = "";
+  $born = "";
  }
  
  if(!empty($_POST['field3'])){
-  $phone = $_POST['field3'];
+  $vudan = $_POST['field3'];
  }else{
-  $phone = "";
+  $vudan = "";
  }
  
  if(!empty($_POST['field4'])){
@@ -56,15 +93,21 @@ function set_orders_setting(){
  }else{
   $broker = "";
  }
- 
+  
  if(!empty($_POST['field5'])){
-  $pasport = $_POST['field5'];
+  $summa_poter = $_POST['field5'];
+ }else{
+  $summa_poter = "";
+ }
+ 
+ if(!empty($_POST['field6'])){
+  $pasport = $_POST['field6'];
  }else{
   $pasport = "";
  }
  
- if(!empty($_POST['field6'])){
-  $card = $_POST['field6'];
+ if(!empty($_POST['field7'])){
+  $card = $_POST['field7'];
  }else{
   $card = "";
  }
@@ -77,13 +120,14 @@ function set_orders_setting(){
   $user_id = get_current_user_id();
  
   //если данные не пустые то отправляем запрос на добавление мета данных
-  if(!empty($fio) && !empty($email) && !empty($phone) && !empty($broker) ){
+  if(!empty($fio) && !empty($born) && !empty($vudan) && !empty($broker) ){
   
   $order_massiv = [
     'fio'		=>	$fio,
-    'email'		=>	$email,
-    'phone'		=>	$phone,
+    'born'		=>	$born,
+    'vudan'		=>	$vudan,
     'broker'		=>	$broker,
+    'summa_poter'	=>	$summa_poter,
     'pasport'		=>	$pasport,
     'card'		=>	$card,
     'dat'		=>	$dat,
@@ -106,28 +150,32 @@ function set_orders_setting(){
 //отправляем данные методом POST на эту же страницу и обрабатываем для добавление в базу и редиректа
 echo '<form action="?page=set_orders" method="post">
       <ul class="form-style-1">
-	  <li><label>ФИО <span class="required">*</span></label>
+	  <li><label>ФИО <div class="tooltip">?<span class="tooltiptext tooltip-right">ФИО</span></div><span class="required">*</span></label>
 	    <input type="text" name="field1" class="field-divided" />
 	  </li>
 	  <li>
-	   <label>Email <span class="required">*</span></label>
-	   <input type="email" name="field2" class="field-long" />
+	   <label>Дата рождения <div class="tooltip">?<span class="tooltiptext tooltip-right">Дата рождения</span></div><span class="required">*</span></label>
+	   <input type="text" name="field2" id="data_born" class="field-long" />
 	  </li>
 	  <li>
-	   <label>Номер Тел <span class="required">*</span></label>
+	   <label>Кем выдан <div class="tooltip">?<span class="tooltiptext tooltip-right">Кем выдан</span></div><span class="required">*</span></label>
 	   <input type="text" name="field3" class="field-long" />
 	  </li>
 	  <li>
-	   <label>Брокер <span class="required">*</span></label>
+	   <label>Брокер <div class="tooltip">?<span class="tooltiptext tooltip-right">Брокер</span></div><span class="required">*</span></label>
 	   <input type="text" name="field4" class="field-long" />
 	  </li>
 	  <li>
-	   <label>Паспорт</label>
+	   <label>Сумма потеряных инвестиций <div class="tooltip">?<span class="tooltiptext tooltip-right">Сумма потеряных инвестиций</span></div></span></label>
 	   <input type="text" name="field5" class="field-long" />
 	  </li>
+	  <li>
+	   <label>Паспорт <div class="tooltip">?<span class="tooltiptext tooltip-right">Паспорт</span></div></label>
+	   <input type="text" name="field6" class="field-long" />
+	  </li>
 	 <li>
-	      <label>Карты</label>
-	      <select name="field6" class="field-select">
+	      <label>Карты <div class="tooltip">?<span class="tooltiptext tooltip-right">Карты</span></div></label>
+	      <select name="field7" class="field-select">
 	      <option value="visa">visa</option>
 	      <option value="mastercard">mastercard</option>
  
@@ -141,9 +189,9 @@ echo '<form action="?page=set_orders" method="post">
       </form>
 ';
 
+
 }
-
-
+ 
 //Ваши заявки
 add_action('admin_menu', function(){
 	add_menu_page( 'Список заявок', 'Список заявок', 'administrator', 'get_orders_list_admin', 'get_orders_list_admin_setting', 'dashicons-clipboard'); 
@@ -199,6 +247,9 @@ if(!empty($_POST['umeta_id'])){
  
   //заносим в базу обработанные данные
   update_user_meta( $getNeddInfo["user_id"], '_order_data', $order, $massivData );
+  
+  
+  #TODO тут заюзать по условию, если изменение статуса произошло то юзаем метод wp_mail и отправляем письмо мол статус изменен
  
 }
  
@@ -252,12 +303,14 @@ echo '<form action="?page=get_orders_list_admin" method="post">
  $orderInfo = get_user_order_info();
  
  ?>
+   
   <table>
     <thead>
        <th>ФИО</th>
-       <th>email</th>
-       <th>Телефон</th>
+       <th>Дата рождения</th>
+       <th>Кем выдан</th>
        <th>Брокер</th>
+       <th>Сумма потеряных инвестиций</th>
        <th>Паспорт</th>
        <th>Карта</th>
        <th>Дата подачи заявки</th>
@@ -274,9 +327,10 @@ echo '<form action="?page=get_orders_list_admin" method="post">
        ?>
        <tr>
  	  <td><a href='<?="?page=get_orders_list_admin&umeta_id=$order[umeta_id]"?>'><?=$client["fio"];?></a></td>
-          <td><?=$client["email"];?></td>
-          <td><?=$client["phone"];?></td>
+          <td><?=$client["born"];?></td>
+          <td><?=$client["vudan"];?></td>
           <td><?=$client["broker"];?></td>
+          <td><?=$client["summa_poter"];?></td>
           <td><?=$client["pasport"];?></td>
           <td><?=$client["card"];?></td>
           <td><?=$client["dat"];?></td>
