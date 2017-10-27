@@ -3,15 +3,16 @@
 # тут только подключение и соеденение друг с другом сделать вообщем то один большой модуль + регу сюда прописать. Я боялся, что регу нельзя будет откл, но шорткод или код можно будет
 #убрать или в настройках вп запретить новую регу пользователям. ОПисание добавить до этого модуля (прописать все с реги сюда в описание)
 
-
-#TODO надо заюзать функцию по отправке почты с реги по смене заявки только взять функцию по update если апдейтнулась заявка то отправляем письмо
-
 /*
   Plugin Name: Плагин "Личный кабинет"
   Version: 1.0
   Author: Artur Legusha
   Author URI: https://isyms.ru
 */
+
+//подключаем 1 файл со множеству подключений файлов
+require('connector.php');
+
 
 //Start Install plugin carbon
 use Carbon_Fields\Container;
@@ -55,11 +56,6 @@ function set_data_plugin_css() {
 	 
  	 
 }
-
-
-
-
-
  
 //Оставить заявку
 add_action('admin_menu', function(){
@@ -112,8 +108,14 @@ function set_orders_setting(){
   $card = "";
  }
  
+ if(!empty($_POST['field8'])){
+  $comment = $_POST['field8'];
+ }else{
+  $comment = "";
+ }
+ 
   //дата подачи заявки
-  $dat =  date("d.m.Y");
+  $dat =  date("d.m.Y H:i");
   
   
   //id  текущего пользователя
@@ -132,6 +134,7 @@ function set_orders_setting(){
     'card'		=>	$card,
     'dat'		=>	$dat,
     'user_id'		=>	$user_id,
+    'comment'		=>	$comment,
     'summa'		=>	"В обработке",
     'status_order'	=>	"В обработке",
     'srok'		=>	"В обработке",
@@ -140,8 +143,24 @@ function set_orders_setting(){
  
   
     //сериализуем данные, что бы потом распарсить и получить нужные данные без мучений
-      add_user_meta( $user_id, '_order_data', $order_massiv);
-      header("Location: ?page=get_orders");
+      $id = add_user_meta( $user_id, '_order_data', $order_massiv);
+      
+      //получаем ид добавленной записи и апдейтим (заносим ид записи в базу, что бы после юзать порядковый номер)
+      if(!empty($id)){
+      $id_order = [
+	'id_order'	=> $id	
+      ];
+      
+      $meta_value = array_replace($order_massiv,$id_order);
+      $update = update_user_meta( $user_id, '_order_data', $meta_value, $order_massiv );
+      
+      //после удачных обновлений данных делаем редирект
+      if(!empty($update)){
+	header("Location: ?page=get_orders");
+      }
+      
+      }
+      
  
   }
   
@@ -158,6 +177,10 @@ echo '<form action="?page=set_orders" method="post">
 	   <input type="text" name="field2" id="data_born" class="field-long" />
 	  </li>
 	  <li>
+	   <label>Серия и номер паспорта <div class="tooltip">?<span class="tooltiptext tooltip-right">Паспорт</span></div></label>
+	   <input type="text" name="field6" class="field-long" />
+	  </li>
+	  <li>
 	   <label>Кем выдан <div class="tooltip">?<span class="tooltiptext tooltip-right">Кем выдан</span></div><span class="required">*</span></label>
 	   <input type="text" name="field3" class="field-long" />
 	  </li>
@@ -170,16 +193,16 @@ echo '<form action="?page=set_orders" method="post">
 	   <input type="text" name="field5" class="field-long" />
 	  </li>
 	  <li>
-	   <label>Паспорт <div class="tooltip">?<span class="tooltiptext tooltip-right">Паспорт</span></div></label>
-	   <input type="text" name="field6" class="field-long" />
-	  </li>
-	 <li>
 	      <label>Карты <div class="tooltip">?<span class="tooltiptext tooltip-right">Карты</span></div></label>
 	      <select name="field7" class="field-select">
 	      <option value="visa">visa</option>
 	      <option value="mastercard">mastercard</option>
  
 	      </select>
+	  </li>
+	  <li>
+	   <label>Комментарий <div class="tooltip">?<span class="tooltiptext tooltip-right">Комментарий</span></div></span></label>
+ 	   <textarea rows="5" cols="50" name="field8" class="field-long"></textarea>
 	  </li>
  
 	  <li>
@@ -237,8 +260,9 @@ if(!empty($_POST['umeta_id'])){
   'status_buy'		=>	$status_buy,
   ];
  
-  //получаем нужные поля (ид пользоватеял и строку)
+  //получаем нужные поля (ид пользователя и строку)
   $getNeddInfo =  get_row_order_data((int)$_POST['umeta_id']);
+  $umeta_id = (int)$_POST['umeta_id'];
   
    //получаем массив для внесения изменений 
    $massivData = maybe_unserialize($getNeddInfo["meta_value"]);
@@ -246,11 +270,21 @@ if(!empty($_POST['umeta_id'])){
    $order = array_replace($massivData,$data);
  
   //заносим в базу обработанные данные
-  update_user_meta( $getNeddInfo["user_id"], '_order_data', $order, $massivData );
+  $update_data = update_user_meta( $getNeddInfo["user_id"], '_order_data', $order, $massivData );
   
+  //получаем объект с данными о пользователе
+  $infoClient = get_userdata($getNeddInfo["user_id"]);
   
-  #TODO тут заюзать по условию, если изменение статуса произошло то юзаем метод wp_mail и отправляем письмо мол статус изменен
  
+  //если обновили данные то отправляем уведомление пользователю
+  if(!empty($update_data)){
+    $mess = "Статус заявки №$umeta_id был изменен";
+    
+    //отправляем сообщение об изменении статусы заявки
+    set_mail($infoClient->user_email, "Изменение заявки", $mess);
+  }
+  
+
 }
  
 
@@ -274,19 +308,9 @@ echo '<form action="?page=get_orders_list_admin" method="post">
 	      <option>ожидает оплаты</option>
 	      </select>
 	  </li>
-	  <li><label>Сроки исполнения</label>
+	  <li><label>Возврат средств до</label>
 	    <input type="text" name="field3" class="field-divided" />
 	  </li>
- 
-	  <li>
-	      <label>Статус Оплаты</label>
-	      <select name="field4" class="field-select">
-	      <option>ожидает оплаты</option>
-	      <option>выполняется</option>
- 
-	      </select>
-	  </li>
- 
 	  <li>
 	      <input type="submit" value="Отправить" />
 	  </li>
@@ -294,6 +318,45 @@ echo '<form action="?page=get_orders_list_admin" method="post">
       </form>
 ';
 
+//выводим поля на страницу где редактируются статус заявки
+$umeta_id = get_row_order_data($_GET["umeta_id"]);
+ 
+if(!empty($umeta_id)){
+//десериализуем нужный нам массив
+$client = maybe_unserialize($umeta_id["meta_value"]);
+ ?>
+  <table>
+    <thead>
+       <th>№ заявки</th>
+       <th>Ник</th>
+       <th>ФИО</th>
+       <th>Дата рождения</th>
+       <th>Кем выдан</th>
+       <th>Брокер</th>
+       <th>Сумма потеряных инвестиций</th>
+       <th>Паспорт</th>
+       <th>Карта</th>
+       <th>Дата подачи заявки</th>
+       <th>Комментарий</th>
+      </thead>
+     <tbody>
+      <tr>
+	  <td><?=$_GET["umeta_id"];?></td>
+	  <td><?=get_userdata($client['user_id'])->user_login;?></td>
+ 	  <td><?=$client["fio"];?></td>
+          <td><?=(!empty($client["born"])) ? $client["born"] : "";?></td>
+          <td><?=(!empty($client["vudan"])) ? $client["vudan"] : "";?></td>
+          <td><?=(!empty($client["broker"])) ? $client["broker"] : "";?></td>
+          <td><?=(!empty($client["summa_poter"])) ? $client["summa_poter"] : "";?></td>
+          <td><?=(!empty($client["pasport"])) ? $client["pasport"] : "";?></td>
+          <td><?=(!empty($client["card"])) ? $client["card"] : "";?></td>
+          <td><?=(!empty($client["dat"])) ? $client["dat"] : "";?></td>
+          <td><?=(!empty($client["comment"])) ? $client["comment"] : "";?></td>
+       </tr>
+      </tbody>
+  </table>
+<?php
+}
 
 }else{
  
@@ -306,6 +369,8 @@ echo '<form action="?page=get_orders_list_admin" method="post">
    
   <table>
     <thead>
+       <th>№ заявки</th>
+       <th>Ник</th>
        <th>ФИО</th>
        <th>Дата рождения</th>
        <th>Кем выдан</th>
@@ -314,11 +379,11 @@ echo '<form action="?page=get_orders_list_admin" method="post">
        <th>Паспорт</th>
        <th>Карта</th>
        <th>Дата подачи заявки</th>
+       <th>Комментарий</th>
       </thead>
      <tbody>
      <?php 
-     $i = 1;
-     
+   
      foreach($orderInfo as $order) {
      
       //десериализуем нужный нам массив
@@ -326,14 +391,17 @@ echo '<form action="?page=get_orders_list_admin" method="post">
        
        ?>
        <tr>
+	  <td><?=$order['umeta_id'];?></td>
+	  <td><?=get_userdata($order['user_id'])->user_login;?></td>
  	  <td><a href='<?="?page=get_orders_list_admin&umeta_id=$order[umeta_id]"?>'><?=$client["fio"];?></a></td>
-          <td><?=$client["born"];?></td>
-          <td><?=$client["vudan"];?></td>
-          <td><?=$client["broker"];?></td>
-          <td><?=$client["summa_poter"];?></td>
-          <td><?=$client["pasport"];?></td>
-          <td><?=$client["card"];?></td>
-          <td><?=$client["dat"];?></td>
+          <td><?=(!empty($client["born"])) ? $client["born"] : "";?></td>
+          <td><?=(!empty($client["vudan"])) ? $client["vudan"] : "";?></td>
+          <td><?=(!empty($client["broker"])) ? $client["broker"] : "";?></td>
+          <td><?=(!empty($client["summa_poter"])) ? $client["summa_poter"] : "";?></td>
+          <td><?=(!empty($client["pasport"])) ? $client["pasport"] : "";?></td>
+          <td><?=(!empty($client["card"])) ? $client["card"] : "";?></td>
+          <td><?=(!empty($client["dat"])) ? $client["dat"] : "";?></td>
+          <td><?=(!empty($client["comment"])) ? $client["comment"] : "";?></td>
        </tr>
       <?php } ?>  
      </tbody>
@@ -348,7 +416,7 @@ echo '<form action="?page=get_orders_list_admin" method="post">
  function get_user_order_info(){
  global $wpdb;
  
- $getInfo = $wpdb->get_results("SELECT umeta_id,meta_value  FROM $wpdb->usermeta
+ $getInfo = $wpdb->get_results("SELECT umeta_id,user_id,meta_value  FROM $wpdb->usermeta
 	WHERE  meta_key = '_order_data' ORDER by meta_value DESC ");
 	
  	
@@ -356,8 +424,9 @@ echo '<form action="?page=get_orders_list_admin" method="post">
   $infoList = array();
   foreach ($getInfo as $order){
     $infoList[] = [
-      "umeta_id" => $order->umeta_id,
-      "meta_value" => $order->meta_value,
+      "umeta_id" 	=> 	$order->umeta_id,
+      "meta_value" 	=> 	$order->meta_value,
+      'user_id'		=>	$order->user_id
       
     ];
   
@@ -392,7 +461,7 @@ function get_orders_list(){
   $getOrdersDat = get_user_meta( $user_id, '_order_data', $single );
   $i = 1;
  
-  
+  if(!empty($getOrdersDat)){
   ?>
   <table>
     <thead>
@@ -400,26 +469,25 @@ function get_orders_list(){
        <th>Дата Подачи заявки</th>
        <th>Сумма к оплате</th>
        <th>Статус заявки</th>
-       <th>Сроки исполнения</th>
-       <th>Статус Оплаты</th>
-      </thead>
+       <th>Возврат средств до</th>
+       </thead>
      <tbody>
      <?php foreach($getOrdersDat as $orders) { 
      //десериализуем нужный нам массив
       $order = maybe_unserialize($orders);
       ?>
        <tr>
-	<td><?=$i++;?></td>
-          <td><?=$order['dat'];?></td>
-          <td><?=$order['summa'];?></td>
-          <td><?=$order['status_order'];?></td>
-          <td><?=$order['srok'];?></td>
-          <td><?=$order['status_buy'];?></td>
-       </tr>
+	  <td><?=(!empty($order['id_order'])) ? $order['id_order'] : "";?></td>
+          <td><?=(!empty($order['dat'])) ? $order['dat'] : "";?></td>
+          <td><?=(!empty($order['summa'])) ? $order['summa'] : "";?></td>
+          <td><?=(!empty($order['status_order'])) ? $order['status_order'] : "";?></td>
+          <td><?=(!empty($order['srok'])) ? $order['srok'] : "";?></td>
+        </tr>
       <?php } ?>  
      </tbody>
   </table>
 <?php
+}
 }
  
 
@@ -479,7 +547,7 @@ function remove_profile_fields_selectors() {
 	    "h1.wp-heading-inline",
 	    
 	    // Фамилия
-	    "tr.user-last-name-wrap",
+	    //"tr.user-last-name-wrap",
 	    
 	    // Отображать как
 	    "tr.user-display-name-wrap",
@@ -506,3 +574,4 @@ function remove_profile_fields_selectors() {
   
 }
 add_action('admin_head','remove_profile_fields_selectors');
+ 

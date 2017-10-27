@@ -14,6 +14,8 @@ function custom_registration_function() {
     if ( isset($_POST['submit'] ) ) {
         registration_validation(
         $_POST['username'],
+        $_POST['first_name'],
+        $_POST['last_name'],
         $_POST['email'],
         $_POST['phone'],
         $_POST['skype'],
@@ -22,8 +24,10 @@ function custom_registration_function() {
        );
           
         // sanitize user form input
-        global $username, $email, $phone, $skype, $password, $passwordSecond;
+        global $username, $first_name, $last_name, $email, $phone, $skype, $password, $passwordSecond;
         $username         =   sanitize_user( $_POST['username'] );
+        $first_name       =   sanitize_user( $_POST['first_name'] );
+        $last_name        =   sanitize_user( $_POST['last_name'] );
         $email            =   sanitize_email( $_POST['email'] );
         $phone            =   esc_attr( $_POST['phone'] );
         $skype            =   sanitize_text_field( $_POST['skype'] );
@@ -34,6 +38,8 @@ function custom_registration_function() {
         // only when no WP_error is found
         complete_registration(
         $username,
+        $first_name,
+        $last_name,
         $email,
         $phone,
         $skype,
@@ -43,7 +49,9 @@ function custom_registration_function() {
   
     registration_form(
         (isset( $_POST['username'] ) ? $username : null),
-        (isset( $_POST['email'] ) ? $email : null),
+        (isset( $_POST['first_name'] ) ? $first_name : null),
+        (isset( $_POST['last_name'] ) ? $last_name : null),
+	(isset( $_POST['email'] ) ? $email : null),
         (isset( $_POST['phone'] ) ? $phone : null),
         (isset( $_POST['skype'] ) ? $skype : null),
         (isset( $_POST['password'] ) ? $password : null),
@@ -53,7 +61,7 @@ function custom_registration_function() {
 }
 
 
- function registration_form( $username, $email, $phone, $skype, $password, $passwordSecond ) {
+ function registration_form( $username,$first_name, $last_name, $email, $phone, $skype, $password, $passwordSecond ) {
     echo '
     <style>
     div {
@@ -69,8 +77,18 @@ function custom_registration_function() {
     echo '
     <form action="' . $_SERVER['REQUEST_URI'] . '" method="post">
     <div>
-    <label for="username">Имя <strong>*</strong></label>
+    <label for="username">Логин <strong>*</strong></label>
     <input type="text" name="username" value="' . ( isset( $_POST['username'] ) ? $username : null ) . '">
+    </div>
+    
+    <div>
+    <label for="first_name">Имя <strong>*</strong></label>
+    <input type="text" name="first_name" value="' . ( isset( $_POST['first_name'] ) ? $first_name : null ) . '">
+    </div>
+    
+    <div>
+    <label for="last_name">Фамилия <strong>*</strong></label>
+    <input type="text" name="last_name" value="' . ( isset( $_POST['last_name'] ) ? $last_name : null ) . '">
     </div>
     
     <div>
@@ -103,10 +121,10 @@ function custom_registration_function() {
     ';
 }
 
-function registration_validation( $username, $email, $phone, $skype, $password, $passwordSecond )  {
+function registration_validation( $username, $first_name, $last_name, $email, $phone, $skype, $password, $passwordSecond )  {
   global $reg_errors;
   $reg_errors = new WP_Error;
-  if ( empty( $username ) || empty( $password ) || empty( $email ) || empty( $passwordSecond ) || empty( $phone ) ) {
+  if ( empty( $username ) || empty( $first_name) || empty( $last_name ) || empty( $password ) || empty( $email ) || empty( $passwordSecond ) || empty( $phone ) ) {
       $reg_errors->add('field', 'Заполните обязательные поля');
   }
   
@@ -115,14 +133,14 @@ function registration_validation( $username, $email, $phone, $skype, $password, 
   }
   
   if ( 4 > strlen( $username ) ) {
-    $reg_errors->add( 'username_length', 'Имя пользователя не должно быть меньше 4 символов' );
+    $reg_errors->add( 'username_length', 'Логин пользователя не должен быть меньше 4 символов' );
   }
   
   if ( username_exists( $username ) )
-    $reg_errors->add('user_name', 'Данное имя уже используется');
+    $reg_errors->add('user_name', 'Данный логин уже используется');
    
   if ( ! validate_username( $username ) ) {
-    $reg_errors->add( 'username_invalid', 'Данное имя недопустимое' );
+    $reg_errors->add( 'username_invalid', 'Данный логин недопустим' );
   } 
   
   if ( 5 > strlen( $password ) ) {
@@ -157,12 +175,15 @@ function registration_validation( $username, $email, $phone, $skype, $password, 
 }
 
 function complete_registration() {
-    global $reg_errors, $username, $email, $phone, $skype, $password;
+    global $reg_errors, $username, $first_name, $last_name, $email, $phone, $skype, $password;
     if ( 1 > count( $reg_errors->get_error_messages() ) ) {
         $userdata = array(
         'user_login'    =>   $username,
         'user_email'    =>   $email,
 	'user_pass'     =>   $password,
+	'first_name'    =>   $first_name,
+	'last_name'     =>   $last_name,
+	'role'          => 'subscriber',
       );
         $user = wp_insert_user( $userdata );
         
@@ -178,7 +199,8 @@ function complete_registration() {
 	  ";
 	  set_mail($email, 'Регистрация', $mess);
 	  
-	  
+	  //добавляем нового лида в Bitrix24
+	   startAPI('https://chargeback24.bitrix24.ua', 'n1db38kgl7do8d0g', $data = ['first_name'=>$first_name,'last_name'=>$last_name,'phone'=>$phone,'email'=>$email,'skype'=>$skype]);
 	  
 	      //добавляем  отдельные данные в таблицу wp_usermeta (номер телефона и скайп)
 	      add_user_meta( $user, 'phone', $phone);
@@ -218,7 +240,6 @@ function custom_registration_shortcode() {
 }
 
 
-#TODO надо будет когда буду переделывать  плагин все соеденить в один с помощью require и созда 1 функцию которая будет принимать параметр на отправку писем (регистрация и заявки)
 //делаем отправку письма
 function set_mail($email, $title, $mess){
 
