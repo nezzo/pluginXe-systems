@@ -73,54 +73,49 @@ function custom_registration_function() {
     }
     </style>
     ';
+    
   
     echo '
-    <form action="' . $_SERVER['REQUEST_URI'] . '" method="post">
-    <div>
-    <label for="username">Логин <strong>*</strong></label>
-    <input type="text" name="username" value="' . ( isset( $_POST['username'] ) ? $username : null ) . '">
+    <form action="' . $_SERVER['REQUEST_URI'] . '" method="post" class="login-form register-form">
+    <div class="form-group">
+     <input type="text" name="username" value="' . ( isset( $_POST['username'] ) ? $username : null ) . '" class="form-control" placeholder="Логин">
     </div>
     
-    <div>
-    <label for="first_name">Имя <strong>*</strong></label>
-    <input type="text" name="first_name" value="' . ( isset( $_POST['first_name'] ) ? $first_name : null ) . '">
+    <div class="form-group">
+     <input type="text" name="first_name" value="' . ( isset( $_POST['first_name'] ) ? $first_name : null ) . '" class="form-control" placeholder="Имя">
     </div>
     
-    <div>
-    <label for="last_name">Фамилия <strong>*</strong></label>
-    <input type="text" name="last_name" value="' . ( isset( $_POST['last_name'] ) ? $last_name : null ) . '">
+    <div class="form-group">
+     <input type="text" name="last_name" value="' . ( isset( $_POST['last_name'] ) ? $last_name : null ) . '" class="form-control" placeholder="Фамилия">
     </div>
     
-    <div>
-    <label for="email">Email <strong>*</strong></label>
-    <input type="text" name="email" value="' . ( isset( $_POST['email']) ? $email : null ) . '">
+    <div class="form-group">
+     <input type="text" name="email" value="' . ( isset( $_POST['email']) ? $email : null ) . '" class="form-control" placeholder="Email">
     </div>
     
-    <div>
-    <label for="phone">Телефон <strong>*</strong></label>
-    <input type="text" name="phone" value="' . ( isset( $_POST['phone']) ? $phone : null ) . '">
+    <div class="form-group">
+     <input type="text" name="phone" value="' . ( isset( $_POST['phone']) ? $phone : null ) . '" class="form-control" placeholder="Телефон">
     </div>
     
-    <div>
-    <label for="skype">Skype</label>
-    <input type="text" name="skype" value="' . ( isset( $_POST['skype']) ? $skype : null ) . '">
+    <div class="form-group">
+     <input type="text" name="skype" value="' . ( isset( $_POST['skype']) ? $skype : null ) . '" class="form-control" placeholder="Skype">
     </div>
       
-    <div>
-    <label for="password">Пароль <strong>*</strong></label>
-    <input type="password" name="password" value="' . ( isset( $_POST['password'] ) ? $password : null ) . '">
+    <div class="form-group">
+     <input type="password" name="password" value="' . ( isset( $_POST['password'] ) ? $password : null ) . '" class="form-control" placeholder="Пароль">
     </div>
     
-    <div>
-    <label for="passwordSecond">Подтвердите Пароль <strong>*</strong></label>
-    <input type="password" name="passwordSecond" value="' . ( isset( $_POST['passwordSecond'] ) ? $passwordSecond : null ) . '">
+    <div class="form-group">
+     <input type="password" name="passwordSecond" value="' . ( isset( $_POST['passwordSecond'] ) ? $passwordSecond : null ) . '" class="form-control" placeholder="Подтвердите Пароль">
     </div>
       
-    <input type="submit" name="submit" value="Зарегистрироваться"/>
+    <div class="form-group">
+      <input type="button" class="form-control login" value="Зарегистрироваться">
+    </div>
     </form>
     ';
 }
-
+ 
 function registration_validation( $username, $first_name, $last_name, $email, $phone, $skype, $password, $passwordSecond )  {
   global $reg_errors;
   $reg_errors = new WP_Error;
@@ -164,9 +159,11 @@ function registration_validation( $username, $first_name, $last_name, $email, $p
   
         foreach ( $reg_errors->get_error_messages() as $error ) {
           
-            echo '<div>';
+	   echo '<div class="error_reg">'; 
+	    echo '<center>';
             echo '<strong>ERROR</strong>:';
             echo $error . '<br/>';
+            echo '</center>';
             echo '</div>';
               
         }
