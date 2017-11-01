@@ -1,13 +1,9 @@
 <?php
 ob_start();
+
  
-/*
-  Plugin Name: Плагин Регистрации нового пользователя
-  Version: 1.0
-  Author: Artur Legusha
-  Author URI: https://isyms.ru
-  Description: Добавление формы по шорткоду или в файл [cr_custom_registration],  custom_registration_function(); 
- */
+//подключаем 1 файл со множеству подключений файлов
+require_once('connector.php');
  
 function custom_registration_function() {
  
@@ -74,46 +70,8 @@ function custom_registration_function() {
     </style>
     ';
     
-  
-    echo '
-    <form action="' . $_SERVER['REQUEST_URI'] . '" method="post" class="login-form register-form">
-    <div class="form-group">
-     <input type="text" name="username" value="' . ( isset( $_POST['username'] ) ? $username : null ) . '" class="form-control" placeholder="Логин">
-    </div>
-    
-    <div class="form-group">
-     <input type="text" name="first_name" value="' . ( isset( $_POST['first_name'] ) ? $first_name : null ) . '" class="form-control" placeholder="Имя">
-    </div>
-    
-    <div class="form-group">
-     <input type="text" name="last_name" value="' . ( isset( $_POST['last_name'] ) ? $last_name : null ) . '" class="form-control" placeholder="Фамилия">
-    </div>
-    
-    <div class="form-group">
-     <input type="text" name="email" value="' . ( isset( $_POST['email']) ? $email : null ) . '" class="form-control" placeholder="Email">
-    </div>
-    
-    <div class="form-group">
-     <input type="text" name="phone" value="' . ( isset( $_POST['phone']) ? $phone : null ) . '" class="form-control" placeholder="Телефон">
-    </div>
-    
-    <div class="form-group">
-     <input type="text" name="skype" value="' . ( isset( $_POST['skype']) ? $skype : null ) . '" class="form-control" placeholder="Skype">
-    </div>
-      
-    <div class="form-group">
-     <input type="password" name="password" value="' . ( isset( $_POST['password'] ) ? $password : null ) . '" class="form-control" placeholder="Пароль">
-    </div>
-    
-    <div class="form-group">
-     <input type="password" name="passwordSecond" value="' . ( isset( $_POST['passwordSecond'] ) ? $passwordSecond : null ) . '" class="form-control" placeholder="Подтвердите Пароль">
-    </div>
-      
-    <div class="form-group">
-      <input type="button" class="form-control login" value="Зарегистрироваться">
-    </div>
-    </form>
-    ';
+    //вызываем форму регистрации
+    echo viewReg();
 }
  
 function registration_validation( $username, $first_name, $last_name, $email, $phone, $skype, $password, $passwordSecond )  {
@@ -214,6 +172,8 @@ function complete_registration() {
 
 		    //в случае удачной авторизации делаем редирект в личный кабинет, если что то пошло не так выводим сообщение об ошибке
 		    if (! is_wp_error($auth) ) {
+			
+		      #TODO тут надо будет сделать редирект на новый кабинет, не в админку вордпресса
 		       wp_redirect( home_url(). '/wp-admin/profile.php' ); 
 			    
 		    }else{

@@ -8,7 +8,7 @@ function get_row_order_data($umeta_id){
  global $wpdb;
  
  $getInfo = $wpdb->get_row($wpdb->prepare("SELECT user_id,meta_value  FROM $wpdb->usermeta
-	WHERE  umeta_id = '$umeta_id'", 'ARRAY_A'));
+	WHERE  umeta_id = %d", $umeta_id), 'ARRAY_A');
 	
  return $getInfo;
 }
