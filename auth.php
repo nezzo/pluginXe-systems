@@ -23,12 +23,13 @@ function authClient(){
 	  $auth = wp_signon($creds,false);
 
 	  //в случае удачной авторизации делаем редирект в личный кабинет, если что то пошло не так выводим сообщение об ошибке
-	  if (! is_wp_error($auth) ) {
-			  
-	    #TODO тут надо будет сделать редирект на новый кабинет, не в админку вордпресса
-	    wp_redirect( home_url(). '/wp-admin/profile.php' ); 
+	  if (!is_wp_error($auth) ) {
+		 
+	    wp_redirect( '/account/', 301 ); 
 			      
 	  }else{
+	  
+	    #TODO тут надо сверстать ошибку, что бы красиво все отображалось
 	    echo $auth->get_error_message();
 	  }
 	

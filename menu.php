@@ -117,13 +117,12 @@ function set_orders_setting(){
       
       //после удачных обновлений данных делаем редирект
       if(!empty($update)){
-	header("Location: ?page=get_orders");
+	//header("Location: ?page=get_orders");
+	wp_redirect( '/your_orders/' , 301 );
       }
       
       }
-      
- 
-  }
+   }
   
 
 //отправляем данные методом POST на эту же страницу и обрабатываем для добавление в базу и редиректа
@@ -320,12 +319,12 @@ add_action('admin_menu', function(){
  
   if(!empty($getOrdersDat)){
   ?>
-  <table>
+  <table class="table table-inverse">
     <thead>
-       <th>Порядковый номер</th>
-       <th>Дата Подачи заявки</th>
-       <th>Сумма к оплате</th>
-       <th>Статус заявки</th>
+       <th>Номер заявки</th>
+       <th>Дата оформления</th>
+       <th>Сумма</th>
+       <th>Статус</th>
        <th>Возврат средств до</th>
        </thead>
      <tbody>
@@ -334,7 +333,7 @@ add_action('admin_menu', function(){
       $order = maybe_unserialize($orders);
       ?>
        <tr>
-	  <td><?=(!empty($order['id_order'])) ? $order['id_order'] : "";?></td>
+	  <td scope="row"><?=(!empty($order['id_order'])) ? "№".$order['id_order'] : "";?></td>
           <td><?=(!empty($order['dat'])) ? $order['dat'] : "";?></td>
           <td><?=(!empty($order['summa'])) ? $order['summa'] : "";?></td>
           <td><?=(!empty($order['status_order'])) ? $order['status_order'] : "";?></td>

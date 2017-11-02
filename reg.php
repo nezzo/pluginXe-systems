@@ -117,7 +117,7 @@ function registration_validation( $username, $first_name, $last_name, $email, $p
   
         foreach ( $reg_errors->get_error_messages() as $error ) {
           
-	   echo '<div class="error_reg">'; 
+	    echo '<div class="error_reg">'; 
 	    echo '<center>';
             echo '<strong>ERROR</strong>:';
             echo $error . '<br/>';

@@ -1,52 +1,50 @@
 <?php
-//тут выводим "вид" файлы (формы  и тд...)
+//тут выводим "вид" форм 
 
 
 //форма "Оставить заявку"
 function viewSet_orders_setting(){
-  $view = '<form action="?page=set_orders" method="post">
-      <ul class="form-style-1">
-	  <li><label>ФИО <div class="tooltip">?<span class="tooltiptext tooltip-right">ФИО</span></div><span class="required">*</span></label>
-	    <input type="text" name="field1" class="field-divided" />
-	  </li>
-	  <li>
-	   <label>Дата рождения <div class="tooltip">?<span class="tooltiptext tooltip-right">Дата рождения</span></div><span class="required">*</span></label>
-	   <input type="text" name="field2" id="data_born" class="field-long" />
-	  </li>
-	  <li>
-	   <label>Серия и номер паспорта <div class="tooltip">?<span class="tooltiptext tooltip-right">Паспорт</span></div></label>
-	   <input type="text" name="field6" class="field-long" />
-	  </li>
-	  <li>
-	   <label>Кем выдан <div class="tooltip">?<span class="tooltiptext tooltip-right">Кем выдан</span></div><span class="required">*</span></label>
-	   <input type="text" name="field3" class="field-long" />
-	  </li>
-	  <li>
-	   <label>Брокер <div class="tooltip">?<span class="tooltiptext tooltip-right">Брокер</span></div><span class="required">*</span></label>
-	   <input type="text" name="field4" class="field-long" />
-	  </li>
-	  <li>
-	   <label>Сумма потеряных инвестиций <div class="tooltip">?<span class="tooltiptext tooltip-right">Сумма потеряных инвестиций</span></div></span></label>
-	   <input type="text" name="field5" class="field-long" />
-	  </li>
-	  <li>
-	      <label>Карты <div class="tooltip">?<span class="tooltiptext tooltip-right">Карты</span></div></label>
-	      <select name="field7" class="field-select">
-	      <option value="visa">visa</option>
-	      <option value="mastercard">mastercard</option>
- 
-	      </select>
-	  </li>
-	  <li>
-	   <label>Комментарий <div class="tooltip">?<span class="tooltiptext tooltip-right">Комментарий</span></div></span></label>
+  $view = '<form action="?page=set_orders" method="post" class="order_zayavki">
+    <div class="col-lg-6 col-md-6">
+      <div class="form-group">
+        <input type="text" name="field1" class="form-control" placeholder="ФИО">
+      </div>
+      <div class="form-group">
+        <input type="text" name="field2" class="form-control" placeholder="Дата рождения">
+      </div>
+      <div class="form-group">
+        <input type="text" name="field6" class="form-control" placeholder="Серия, номер паспорта">
+      </div>
+      <div class="form-group">
+        <input type="text" name="field3" class="form-control" placeholder="Кем выдан">
+      </div>
+      <div class="form-group">
+        <input type="text" name="field4" class="form-control" placeholder="Брокер">
+      </div>
+      <div class="form-group">
+        <input type="text" name="field5" class="form-control" placeholder="Сумма потеряных инвестиций">
+      </div>
+      <div class="form-group">
+        <label>Карты</label>
+	<select name="field7" class="field-select">
+	<option value="visa">visa</option>
+	<option value="mastercard">mastercard</option>
+	</select>
+      </div>
+      <div class="form-group">
+       <label>Комментарий</label>
  	   <textarea rows="5" cols="50" name="field8" class="field-long"></textarea>
-	  </li>
- 
-	  <li>
-	      <input type="submit" value="Отправить" />
-	  </li>
-      </ul>
-      </form>
+      </div>
+      <div class="form-group">
+        <input type="submit" class="form-control btn btn-success" value="Оформить заявку">
+      </div>
+    </div> 
+  </form>
+  <form action="/account/" method="post" class="order_zayavki">
+    <div class="form-group">
+         <input type="submit" style="background: #b41d1d;" class="form-control btn btn-danger" value="Вернуться в кабинет">
+      </div>
+  </form>
 ';
 
 return $view;
